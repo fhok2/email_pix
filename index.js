@@ -55,7 +55,7 @@ const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // Apenas em HTTPS em produção
-    sameSite: 'strict', // Protege contra navegação cruzada
+    sameSite: 'none', // Protege contra navegação cruzada
     maxAge: 3600 // 1 hora
   }
 });

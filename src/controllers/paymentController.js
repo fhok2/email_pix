@@ -106,6 +106,7 @@ module.exports = {
   },
   async startPaymentSession(req, res) {
     const { transactionID } = req.body;
+    console.log(req.body)
     try {
       const tempToken = generateTempToken(transactionID);
       res.status(200).json({ tempToken });
