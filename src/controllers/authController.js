@@ -2,6 +2,7 @@
 
 const AuthService = require('../services/authService');
 const { generateAndSendPassword } = require('../services/passwordService');
+const logger = require('../utils/logger');
 
 module.exports = class AuthController {
   async sendPassword(req, res) {
@@ -21,6 +22,7 @@ module.exports = class AuthController {
         message: "Senha enviada para o e-mail.",
       });
     } catch (error) {
+      logger.error('Erro ao enviar a senha.', { error });
       console.error(error);
       res.status(500).json({
         code: 500,
@@ -63,6 +65,7 @@ module.exports = class AuthController {
         });
       }
     } catch (error) {
+      logger.error('Erro ao validar a senha.', { error });
       res.status(500).json({
         code: 500,
         status: "error",

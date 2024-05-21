@@ -60,12 +60,24 @@ const csrfProtection = csrf({
   }
 });
 
-// Adicionar middleware CSRF antes das rotas
+// Middleware para proteção contra CSRF
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/payments/webhook') {
     next(); // Ignorar CSRF para a rota do webhook
   } else {
     csrfProtection(req, res, next); // Aplicar CSRF para outras rotas
+
+    // Log após a verificação do CSRF
+    if (req.csrfToken) {
+      console.log('Token CSRF:', req.csrfToken()); 
+    } else {
+      console.log('Token CSRF não encontrado na requisição.');
+    }
+
+    // Outras informações relevantes
+    console.log('Método:', req.method);
+    console.log('URL:', req.originalUrl);
+    console.log('Headers:', req.headers); // Cuidado com informações sensíveis nos headers!
   }
 });
 

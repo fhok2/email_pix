@@ -13,11 +13,13 @@ router.post('/create-guest',
   body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
   body('cpf').isLength({ min: 11, max: 14 }).withMessage('CPF inválido').trim().escape(),
   body('phone').optional().isString().withMessage('Telefone inválido').trim().escape(),
+
   validateRequest,
   paymentController.createPaymentGuest
 );
 
 router.post('/create-auth',
+body('cpf').isLength({ min: 11, max: 14 }).withMessage('CPF inválido').trim().escape(),
   authenticate,
   validateRequest,
   paymentController.createPaymentAuth

@@ -1,3 +1,5 @@
+const logger = require("../utils/logger");
+
 // src/middlewares/errorHandler.js
 class AppError extends Error {
   constructor(message, statusCode) {
@@ -12,6 +14,7 @@ class AppError extends Error {
 
 const errorHandler = (err, req, res, next) => {
   if (!err.isOperational) {
+    logger.error('ERROR 💥', { err })
     console.error('ERROR 💥', err);
     err.statusCode = 500;
     err.message = 'Algo deu errado!';
