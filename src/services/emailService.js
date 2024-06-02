@@ -1,10 +1,14 @@
-// src/services/emailServices.js
-
 const User = require('../models/User');
 const emailServices = require('./emailServices');
 const { generatePassword, hashPassword } = require('./passwordService');
 const DOMINIO = require('../enums/dominio');
 const logger = require('../utils/logger');
+
+// Função para verificar se o ambiente é de produção
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Função para verificar se o modo demo está ativado
+const isDemo = process.env.IS_DEMO === 'true';
 
 const criarEmail = async (userEmail, customName, name, senha) => {
   let localPart = customName || userEmail;
@@ -41,7 +45,7 @@ const criarEmail = async (userEmail, customName, name, senha) => {
 
   const user = await User.findOne({ email: userEmail });
   if (user) {
-    if (user.plan === 'free' && user.createdEmails.length >= 3) {
+    if (!isDemo && user.plan === 'free' && user.createdEmails.length >= 3) {
       return {
         code: 403,
         status: "error",
@@ -104,12 +108,15 @@ const direcionarEmail = async (dataEmails) => {
     user = newUser;
   }
 
-  if (user.plan === 'free' && user.createdEmails.length >= 3) {
-    return {
-      code: 403,
-      status: "error",
-      message: "Plano gratuito permite até 3 e-mails.",
-    };
+  // Verificação de limite de e-mails dependendo do ambiente
+  if (isProduction && !isDemo) {
+    if (user.plan === 'free' && user.createdEmails.length >= 3) {
+      return {
+        code: 403,
+        status: "error",
+        message: "Plano gratuito permite até 3 e-mails.",
+      };
+    }
   }
 
   const dataEmailsToService = { clientEmail: customName, userEmail };

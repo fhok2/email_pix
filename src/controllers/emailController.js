@@ -37,7 +37,7 @@ module.exports = class EmailController {
         return res.status(400).json({
           code: 400,
           status: "error",
-          message: "userEmail and customName must be provided",
+          message: "O userEmail e o customName devem ser fornecidos",
         });
       }
 
