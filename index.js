@@ -53,16 +53,16 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'X-CSRF-Token']
 }));
 
-// Middleware para proteção contra CSRF
 const csrfProtection = csrf({
   value: (req) => req.headers['x-csrf-token'],
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // Apenas em HTTPS em produção
-    sameSite: 'Lax', // Protege contra navegação cruzada
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // None em produção para permitir cookies entre domínios
     maxAge: 3600 // 1 hora
   }
 });
+
 
 // Middleware de CSRF aplicado apenas nas rotas que não sejam webhook
 app.use((req, res, next) => {
