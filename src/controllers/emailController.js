@@ -2,7 +2,7 @@
 
 const EmailService = require('../services/emailService');
 const logger = require('../utils/logger');
-const DOMINIO = require('../enums/dominio');
+
 
 module.exports = class EmailController {
   async bemvindo(req, res) {
@@ -30,7 +30,7 @@ module.exports = class EmailController {
   }
 
   async direcionarEmail(req, res) {
-    const { userEmail, customName,name } = req.body;
+    const { userEmail, customName} = req.body;
  
     try {
       if (!userEmail || !customName) {

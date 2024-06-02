@@ -46,38 +46,30 @@ app.use(bodyParser.json());
 // Configuração de CORS
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS.split(','), // Lista de origens permitidas
-  methods: ['GET', 'POST'],
-  credentials: true,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  credentials: true, // Essencial para cookies
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token']
 }));
 
 // Middleware para proteção contra CSRF
 const csrfProtection = csrf({
+  value: (req) => req.headers['x-csrf-token'],
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // Apenas em HTTPS em produção
-    sameSite: 'none', // Protege contra navegação cruzada
+    sameSite: 'Lax', // Protege contra navegação cruzada
     maxAge: 3600 // 1 hora
   }
 });
 
-// Middleware para proteção contra CSRF
+// Middleware de CSRF aplicado apenas nas rotas que não sejam webhook
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/payments/webhook') {
     next(); // Ignorar CSRF para a rota do webhook
   } else {
-    csrfProtection(req, res, next); // Aplicar CSRF para outras rotas
-
-    // Log após a verificação do CSRF
-    if (req.csrfToken) {
-      console.log('Token CSRF:', req.csrfToken()); 
-    } else {
-      console.log('Token CSRF não encontrado na requisição.');
-    }
-
-    // Outras informações relevantes
-    console.log('Método:', req.method);
-    console.log('URL:', req.originalUrl);
-    console.log('Headers:', req.headers); // Cuidado com informações sensíveis nos headers!
+    csrfProtection(req, res, next);
   }
 });
 
@@ -86,7 +78,7 @@ connectDB();
 
 // Rotas da aplicação
 app.use('/api/payments', paymentRoutes);
-app.use('/api/emails', emailRoutes);
+app.use('/api/emails', csrfProtection, emailRoutes); // Aplicar CSRF aqui
 app.use('/api/auth', authRoutes);
 app.use('/api/csrf', csrfRoutes);
 

@@ -86,7 +86,7 @@ const direcionarEmail = async (dataEmails) => {
       return {
         code: 400,
         status: "error",
-        message: "E-mail já está registrado em outro usuário.",
+        message: `E-mail ${clientEmail} já está em uso.`,
       };
     }
   }
