@@ -1,5 +1,3 @@
-// src/services/authService.js
-
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
@@ -37,9 +35,6 @@ const comparePassword = (password, hash) => {
   return bcrypt.compare(password, hash);
 };
 
-const findUserByEmail = (email) => {
-  return User.findOne({ email });
-};
 
 const createUser = (userData) => {
   // Adicionando permissões com base no papel
@@ -56,8 +51,12 @@ const renewTokens = async (refreshToken) => {
     const decoded = verifyRefreshToken(refreshToken);
     const user = await findUserByEmail(decoded.email);
 
-    if (!user || user.refreshToken !== refreshToken) {
-      throw new Error('Refresh token inválido.');
+    if (!user) {
+      throw new Error('Usuário não encontrado.');
+    }
+
+    if (user.refreshToken !== refreshToken) {
+      throw new Error('Refresh token não corresponde ao armazenado para o usuário.');
     }
 
     const newAccessToken = generateToken(user);
@@ -68,8 +67,14 @@ const renewTokens = async (refreshToken) => {
 
     return { newAccessToken, newRefreshToken };
   } catch (error) {
-    throw new Error('Erro ao renovar os tokens.');
+    console.error('Erro ao renovar os tokens:', error);
+    throw new Error(`Erro ao renovar os tokens: ${error.message}`);
   }
+};
+
+const findUserByEmail = async (email) => {
+
+  return await User.findOne({ email });
 };
 
 module.exports = {

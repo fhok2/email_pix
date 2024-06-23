@@ -1,7 +1,5 @@
-// src/routes/authRoutes.js
-
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const validateRequest = require('../middlewares/validateRequest');
 const AuthController = require('../controllers/authController');
 const rateLimit = require('express-rate-limit');
@@ -10,12 +8,21 @@ const authorize = require('../middlewares/authorize');
 
 const authRouter = express.Router();
 const authController = new AuthController();
+const isURLWithHTTPorHTTPS = (value) => {
+  if (!value.startsWith('http://') && !value.startsWith('https://')) {
+    throw new Error('URL base deve começar com http:// ou https://');
+  }
+  return true;
+};
+
 
 const refreshRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // Limite de 5 requisições por IP por janela
+  max: 500, // Limite de 5 requisições por IP por janela
   message: 'Too many refresh requests from this IP, please try again after 15 minutes',
 });
+
+authRouter.post('/verifyToken', authController.verifyToken);
 
 authRouter.post('/sendPassword', 
   body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
@@ -32,11 +39,39 @@ authRouter.post('/login',
 
 authRouter.post('/refreshToken', 
   refreshRateLimiter,
-  body('refreshToken').isString().withMessage('Refresh token é obrigatório'),
-  validateRequest,
+
+  (req, res, next) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({
+        code: 401,
+        status: "error",
+        message: "Refresh token não encontrado nos cookies.",
+      });
+    }
+    req.refreshToken = refreshToken;
+    next();
+  },
   authController.refreshToken
 );
 
 authRouter.post('/logout', authenticate, authController.logout);
+
+authRouter.post(
+  '/requestPasswordReset',
+  body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
+  body('baseUrl').custom(isURLWithHTTPorHTTPS),
+  validateRequest,
+  authController.requestPasswordReset
+);
+
+
+authRouter.post('/resetPassword/:token', 
+  param('token').not().isEmpty().withMessage('Token é obrigatório'),
+  body('newPassword').isLength({ min: 6 }).withMessage('A senha deve ter no mínimo 6 caracteres').trim().escape(),
+  validateRequest,
+  authController.resetPassword
+);
+
 
 module.exports = authRouter;

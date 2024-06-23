@@ -69,10 +69,10 @@ const criarEmail = async (userEmail, customName, name, senha) => {
 };
 
 const direcionarEmail = async (dataEmails) => {
-  const { userEmail, customName } = dataEmails;
+  const { userEmail, customName, purpose } = dataEmails; // Adicione o campo 'purpose'
 
   // Verifica se os parâmetros obrigatórios estão presentes
-  if (!userEmail || !customName) {
+  if (!userEmail || !customName) { // Verifique se 'userEmail' e 'customName' estão presentes
     return {
       code: 400,
       status: "error",
@@ -119,15 +119,16 @@ const direcionarEmail = async (dataEmails) => {
     }
   }
 
-  const dataEmailsToService = { clientEmail: customName, userEmail };
+  const dataEmailsToService = { clientEmail: customName, userEmail, purpose: purpose || '' }; // Defina um valor padrão (em branco) se 'purpose' não estiver presente
   const response = await emailServices.direcionarEmail(dataEmailsToService);
   if (response.code === 200) {
     // Se o e-mail já existe para este usuário, atualize o encaminhamento
     const emailEntry = user.createdEmails.find(e => e.address === clientEmail);
     if (emailEntry) {
       emailEntry.forwarding = userEmail;
+      emailEntry.purpose = purpose || ''; // Defina um valor padrão (em branco) se 'purpose' não estiver presente
     } else {
-      user.createdEmails.push({ address: clientEmail, forwarding: userEmail });
+      user.createdEmails.push({ address: clientEmail, forwarding: userEmail, purpose: purpose || '' }); // Adicione o campo 'purpose' com um valor padrão (em branco) se 'purpose' não estiver presente
     }
     await user.save();
     return {
@@ -140,6 +141,7 @@ const direcionarEmail = async (dataEmails) => {
 
   return response;
 };
+
 
 const cancelarEncaminhamento = async (userEmail, clientEmail) => {
   const user = await User.findOne({ email: userEmail });
@@ -187,35 +189,36 @@ const reativarEncaminhamento = async (userEmail, clientEmail) => {
   };
 };
 
-const atualizarEncaminhamento = async (userEmail, clientEmail, forwardingEmail) => {
+const atualizarEncaminhamento = async (userEmail, clientEmail, forwardingEmail, purpose) => {
   const user = await User.findOne({ email: userEmail });
   if (!user) {
-    return {
-      code: 404,
-      status: "error",
-      message: "Usuário não encontrado.",
-    };
+      return {
+          code: 404,
+          status: "error",
+          message: "Usuário não encontrado.",
+      };
   }
 
   const emailEntry = user.createdEmails.find(e => e.address === clientEmail );
   if (!emailEntry) {
-    return {
-      code: 404,
-      status: "error",
-      message: "E-mail não encontrado ou não está vinculado ao usuário.",
-    };
+      return {
+          code: 404,
+          status: "error",
+          message: "E-mail não encontrado ou não está vinculado ao usuário.",
+      };
   }
-  
-const dataEmailsToService = { clientEmail:clientEmail.split('@')[0], userEmail: forwardingEmail };
+
+  const dataEmailsToService = { clientEmail: clientEmail.split('@')[0], userEmail: forwardingEmail };
   const response = await emailServices.direcionarEmail(dataEmailsToService);
   if (response.code === 200) {
-    emailEntry.forwarding = forwardingEmail;
-    await user.save();
-    return {
-      code: 200,
-      status: "success",
-      message: "Encaminhamento atualizado com sucesso.",
-    };
+      emailEntry.forwarding = forwardingEmail;
+      emailEntry.purpose = purpose; // Atualiza o propósito do encaminhamento
+      await user.save();
+      return {
+          code: 200,
+          status: "success",
+          message: "Encaminhamento atualizado com sucesso.",
+      };
   }
   return response;
 };
@@ -253,8 +256,13 @@ const atualizarPlano = async (userId, novoPlano) => {
 };
 
 // Novo método para listar os e-mails do usuário
-const listarEmailsUsuario = async (userId) => {
-  const user = await User.findById(userId).select('createdEmails');
+const listarEmailsUsuario = async (userId, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
+  const user = await User.findById(userId).select({
+    createdEmails: { $slice: [skip, limit] },
+  });
+
   if (!user) {
     return {
       code: 404,
@@ -263,10 +271,24 @@ const listarEmailsUsuario = async (userId) => {
     };
   }
 
+  // Contar o total de e-mails
+  const totalEmails = await User.aggregate([
+    { $match: { _id: user._id } },
+    { $project: { count: { $size: "$createdEmails" } } }
+  ]);
+
+  const totalPages = Math.ceil(totalEmails[0].count / limit);
+
   return {
     code: 200,
     status: 'success',
     data: user.createdEmails,
+    pagination: {
+      totalEmails: totalEmails[0].count,
+      totalPages,
+      currentPage: page,
+      pageSize: limit,
+    },
   };
 };
 

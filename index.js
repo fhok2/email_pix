@@ -6,6 +6,7 @@ const paymentRoutes = require('./src/routes/paymentRoutes');
 const emailRoutes = require('./src/routes/emailRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const csrfRoutes = require('./src/routes/csrfRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 const socket = require('./socket');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -50,8 +51,19 @@ app.use(cors({
   preflightContinue: false,
   optionsSuccessStatus: 204,
   credentials: true, // Essencial para cookies
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token']
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token','Authorization'],
+  exposedHeaders: ['X-CSRF-Token'], // Adicione este cabeçalho
 }));
+
+// Middleware de logging
+app.use((req, res, next) => {
+  console.log('--- Request Details ---');
+  console.log('Method:', req.method);
+  console.log('URL:', req.originalUrl);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  next();
+});
 
 const csrfProtection = csrf({
   value: (req) => req.headers['x-csrf-token'],
@@ -81,6 +93,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/emails', csrfProtection, emailRoutes); // Aplicar CSRF aqui
 app.use('/api/auth', authRoutes);
 app.use('/api/csrf', csrfRoutes);
+app.use('/api/user', userRoutes);
 
 // Middleware de tratamento de erros
 app.use(errorHandler);

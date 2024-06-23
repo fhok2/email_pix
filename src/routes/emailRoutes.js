@@ -1,7 +1,5 @@
-// src/routes/emailRoutes.js
-
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const emailRouter = express.Router();
 const EmailController = require('../controllers/emailController');
 const emailController = new EmailController();
@@ -15,9 +13,11 @@ emailRouter.get('/bemvindo', emailController.bemvindo);
 emailRouter.post('/direcionaremail',
   body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
   body('customName').isString().withMessage('Nome personalizado é obrigatório'),
+  body('purpose').optional().isString().withMessage('Finalidade deve ser uma string'), // Validação opcional para 'purpose'
   validateRequest,
   emailController.direcionarEmail
 );
+
 
 emailRouter.use(authenticate);
 
@@ -31,30 +31,41 @@ emailRouter.post('/criaremail',
   emailController.criarEmail
 );
 
-emailRouter.post('/cancelarencaminhamento',
-  body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-  body('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
-  validateRequest,
-  verifyUserEmail,
-  emailController.cancelarEncaminhamento
-);
 
-emailRouter.post('/atualizarencaminhamento',
+emailRouter.put('/atualizarencaminhamento/:userId',
   body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
   body('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
   body('forwardingEmail').isEmail().withMessage('Email de encaminhamento é obrigatório').normalizeEmail(),
+  body('purpose').optional().isString().withMessage('Finalidade deve ser uma string'),
   validateRequest,
-  verifyUserEmail,
+  authenticate, // Proteger a rota com autenticação
+  authorize(['admin', 'user']), // Proteger a rota com autorização (admin ou user)
   emailController.atualizarEncaminhamento
-);
+  );
+  
+  
+  emailRouter.put(
+    '/cancelarencaminhamento/:userEmail/:clientEmail',
+    param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
+    param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+    validateRequest,
+    authenticate,
+    authorize(['admin', 'user']),
+    emailController.cancelarEncaminhamento
+  );
 
-emailRouter.post('/reativarencaminhamento',
-  body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-  body('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+emailRouter.put(
+  '/reativarencaminhamento/:userEmail/:clientEmail',
+  param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
+  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
   validateRequest,
-  verifyUserEmail,
+  authenticate,
+  authorize(['admin', 'user']),
   emailController.reativarEncaminhamento
 );
+
+// Nova rota protegida para exibir os e-mails e direcionamentos do usuário
+emailRouter.get('/listaremailusuario', authenticate, emailController.listarEmailsUsuario);
 
 // Aplicando o middleware de autorização para verificar permissões de administrador
 emailRouter.use(authorize(['admin']));
@@ -68,7 +79,7 @@ emailRouter.post('/atualizarplano',
   emailController.atualizarPlano
 );
 
-// Nova rota protegida para exibir os e-mails e direcionamentos do usuário
-emailRouter.get('/listaremailusuario', authenticate, emailController.listarEmailsUsuario);
+
+
 
 module.exports = emailRouter;

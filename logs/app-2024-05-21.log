@@ -1,8 +1,0 @@
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 10:38:23"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:33:52"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:34:40"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:43:17"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:44:10"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:44:49"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:49:25"}
-{"err":{"code":"EBADCSRFTOKEN","message":"invalid csrf token"},"level":"error","message":"ERROR 💥","service":"email-server","timestamp":"2024-05-21 12:50:10"}
