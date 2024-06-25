@@ -18,7 +18,7 @@ const isURLWithHTTPorHTTPS = (value) => {
 
 const refreshRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 500, // Limite de 5 requisições por IP por janela
+  max: 1000, // Limite de 5 requisições por IP por janela
   message: 'Too many refresh requests from this IP, please try again after 15 minutes',
 });
 

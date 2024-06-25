@@ -68,7 +68,7 @@ app.use((req, res, next) => {
 const csrfProtection = csrf({
   value: (req) => req.headers['x-csrf-token'],
   cookie: {
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production', // Apenas em HTTPS em produção
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // None em produção para permitir cookies entre domínios
     maxAge: 3600 // 1 hora
