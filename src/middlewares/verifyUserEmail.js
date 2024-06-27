@@ -12,7 +12,6 @@ const verifyUserEmail = async (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-console.log('Decoded:', decoded);
     if (decoded.email !== userEmail) {
       return next(new AppError('O email fornecido não corresponde ao email associado ao token JWT.', 403));
     }

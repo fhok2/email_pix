@@ -3,6 +3,7 @@ const { AppError } = require('../middlewares/errorHandler');
 const User = require('../models/User');
 
 const authenticate = async (req, res, next) => {
+ 
   const token = req.header('Authorization')?.replace('Bearer ', '');
   // console.log('Request Headers:', JSON.stringify(req.headers)); 
   if (!token) {

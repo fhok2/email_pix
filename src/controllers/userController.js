@@ -95,7 +95,9 @@ async update(req, res) {
   // Método para verificar se o email já está cadastrado
   async checkEmail(req, res) {
     const { email } = req.body;
+    
     try {
+      
       const user = await UserService.findUserByEmail(email);
       if (user) {
         return res.status(200).json({

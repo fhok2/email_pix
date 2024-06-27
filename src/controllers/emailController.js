@@ -98,7 +98,7 @@ module.exports = class EmailController {
         const response = await EmailService.atualizarEncaminhamento(userEmail, clientEmail, forwardingEmail, purpose);
         res.status(response.code).json(response);
     } catch (error) {
-        console.log(error);
+        
         logger.error('Erro ao atualizar o encaminhamento do e-mail:', error);
         res.status(500).json({
             code: 500,
