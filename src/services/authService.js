@@ -20,6 +20,7 @@ const generateRefreshToken = (user) => {
 };
 
 const verifyToken = (token) => {
+ 
   return jwt.verify(token, process.env.JWT_SECRET);
 };
 
@@ -77,6 +78,26 @@ const findUserByEmail = async (email) => {
   return await User.findOne({ email });
 };
 
+const resetPassword = async (token, newPassword) => {
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    const error = new Error("Token inválido ou expirado.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  user.password = await hashPassword(newPassword);
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  return user;
+};
+
 module.exports = {
   generateToken,
   generateRefreshToken,
@@ -86,5 +107,6 @@ module.exports = {
   comparePassword,
   findUserByEmail,
   createUser,
-  renewTokens
+  renewTokens,
+  resetPassword,
 };

@@ -2,10 +2,11 @@ const express = require('express');
 const { body } = require('express-validator');
 const validateRequest = require('../middlewares/validateRequest');
 const UserController = require('../controllers/userController');
-const router = express.Router();
+const authenticate = require('../middlewares/auth');
+const userRouter = express.Router();
 const userController = new UserController();
 
-router.post(
+userRouter.post(
   '/register',
   [
     body('name').isLength({ min: 1 }).withMessage('Nome é obrigatório').trim().escape(),
@@ -17,16 +18,17 @@ router.post(
   (req, res) => userController.register(req, res)
 );
 
-router.put('/update/:id',
+userRouter.put('/update/:id',
   [
     body('name').isLength({ min: 1 }).withMessage('Nome é obrigatório').trim().escape(),
     body('phone').optional().isMobilePhone('pt-BR').withMessage('Número de telefone inválido'),
   ],
   validateRequest,
+  authenticate,
   (req, res) => userController.update(req, res)
 );  
 
-router.post(
+userRouter.post(
   '/check-email',
   [
     body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
@@ -35,4 +37,6 @@ router.post(
   (req, res) => userController.checkEmail(req, res)
 );
 
-module.exports = router;
+userRouter.get('/listaremailusuario', authenticate, userController.listarEmailsUsuario);
+
+module.exports = userRouter;

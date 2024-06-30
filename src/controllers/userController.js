@@ -106,7 +106,7 @@ async update(req, res) {
           message: "E-mail encontrado.",
         });
       } else {
-        return res.status(404).json({
+        return res.status(200).json({
           code: 404,
           status: "error",
           message: "E-mail não registrado.",
@@ -122,4 +122,22 @@ async update(req, res) {
       });
     }
   }
+  async listarEmailsUsuario (req, res) {
+    const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+  
+    try {
+      const response = await UserService.listarEmailsUsuario(userId, page, limit);
+      res.status(response.code).json(response);
+    } catch (error) {
+      logger.error('Erro ao listar os e-mails do usuário:', error);
+      res.status(500).json({
+        code: 500,
+        status: "error",
+        message: "Erro ao listar os e-mails do usuário",
+        data: error.message,
+      });
+    }
+  };
 };

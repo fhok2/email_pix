@@ -223,74 +223,70 @@ const atualizarEncaminhamento = async (userEmail, clientEmail, forwardingEmail, 
   return response;
 };
 
-const listarUsuarios = async () => {
-  const users = await User.find({}, 'name email plan paymentDate');
-  return {
-    code: 200,
-    status: 'success',
-    data: users,
-  };
-};
-
-const atualizarPlano = async (userId, novoPlano) => {
-  const user = await User.findById(userId);
+const excluirEmail = async (userEmail, clientEmail) => {
+  const user = await User.findOne({ email: userEmail });
   if (!user) {
-    return {
-      code: 404,
-      status: 'error',
-      message: 'Usuário não encontrado',
-    };
+    throw new Error('Usuário não encontrado');
   }
 
-  user.plan = novoPlano;
-  if (novoPlano === 'paid') {
-    user.paymentDate = new Date();
+  if (!user.createdEmails || !Array.isArray(user.createdEmails)) {
+    throw new Error('Lista de emails criados não encontrada ou inválida');
   }
+
+  const emailIndex = user.createdEmails.findIndex(e => e.address === clientEmail);
+  if (emailIndex === -1) {
+    throw new Error('E-mail não encontrado');
+  }
+
+  const email = user.createdEmails[emailIndex];
+
+  if (email.status === 'active') {
+    // Cancelar o encaminhamento no servidor de e-mail apenas se o status for 'active'
+    await emailServices.cancelarEncaminhamento(clientEmail);
+  }
+
+  // Atualizar o status do e-mail no banco de dados
+  email.status = 'deleted';
+  email.deletedAt = new Date();
   await user.save();
 
   return {
     code: 200,
-    status: 'success',
-    message: 'Plano atualizado com sucesso',
+    status: "success",
+    message: "E-mail excluído com sucesso",
   };
 };
 
-// Novo método para listar os e-mails do usuário
-const listarEmailsUsuario = async (userId, page = 1, limit = 10) => {
-  const skip = (page - 1) * limit;
-
-  const user = await User.findById(userId).select({
-    createdEmails: { $slice: [skip, limit] },
-  });
-
+const reativarEmail = async (userEmail, clientEmail) => {
+  const user = await User.findOne({ email: userEmail });
   if (!user) {
-    return {
-      code: 404,
-      status: 'error',
-      message: 'Usuário não encontrado',
-    };
+    throw new Error('Usuário não encontrado');
   }
 
-  // Contar o total de e-mails
-  const totalEmails = await User.aggregate([
-    { $match: { _id: user._id } },
-    { $project: { count: { $size: "$createdEmails" } } }
-  ]);
+  const emailIndex = user.createdEmails.findIndex(e => e.address === clientEmail && e.status === 'deleted');
+  if (emailIndex === -1) {
+    throw new Error('E-mail excluído não encontrado');
+  }
 
-  const totalPages = Math.ceil(totalEmails[0].count / limit);
+  // Reativar o encaminhamento no servidor de e-mail
+  await direcionarEmail({
+    customName: clientEmail.split('@')[0],
+    userEmail: userEmail,
+    purpose: user.createdEmails[emailIndex].purpose
+  });
+
+  // Atualizar o status do e-mail no banco de dados
+  user.createdEmails[emailIndex].status = 'active';
+  user.createdEmails[emailIndex].deletedAt = undefined;
+  await user.save();
 
   return {
     code: 200,
-    status: 'success',
-    data: user.createdEmails,
-    pagination: {
-      totalEmails: totalEmails[0].count,
-      totalPages,
-      currentPage: page,
-      pageSize: limit,
-    },
+    status: "success",
+    message: "E-mail reativado com sucesso",
   };
-};
+}
+
 
 module.exports = {
   criarEmail,
@@ -298,7 +294,6 @@ module.exports = {
   cancelarEncaminhamento,
   reativarEncaminhamento,
   atualizarEncaminhamento,
-  listarUsuarios,
-  atualizarPlano,
-  listarEmailsUsuario,
+  excluirEmail,
+  reativarEmail
 };

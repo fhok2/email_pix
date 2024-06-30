@@ -1,8 +1,8 @@
 // src/controllers/emailController.js
 
-const EmailService = require('../services/emailService');
-const logger = require('../utils/logger');
-
+const User = require("../models/User");
+const EmailService = require("../services/emailService");
+const logger = require("../utils/logger");
 
 module.exports = class EmailController {
   async bemvindo(req, res) {
@@ -16,10 +16,15 @@ module.exports = class EmailController {
   async criarEmail(req, res) {
     const { userEmail, customName, name, senha } = req.body;
     try {
-      const response = await EmailService.criarEmail(userEmail, customName, name, senha);
+      const response = await EmailService.criarEmail(
+        userEmail,
+        customName,
+        name,
+        senha
+      );
       res.status(response.code).json(response);
     } catch (error) {
-      logger.error('Erro ao criar o e-mail:', error);
+      logger.error("Erro ao criar o e-mail:", error);
       res.status(500).json({
         code: 500,
         status: "error",
@@ -31,25 +36,26 @@ module.exports = class EmailController {
 
   async direcionarEmail(req, res) {
     const { userEmail, customName, purpose } = req.body; // Adicione o campo 'purpose'
-  
+
     try {
-      if (!userEmail || !customName) { // Verifique se 'userEmail' e 'customName' estão presentes
+      if (!userEmail || !customName) {
+        // Verifique se 'userEmail' e 'customName' estão presentes
         return res.status(400).json({
           code: 400,
           status: "error",
           message: "Email e email personalizado devem ser fornecidos",
         });
       }
-  
+
       const response = await EmailService.direcionarEmail({
         customName,
         userEmail,
-        purpose: purpose || '' // Defina um valor padrão (em branco) se 'purpose' não estiver presente
+        purpose: purpose || "", // Defina um valor padrão (em branco) se 'purpose' não estiver presente
       });
-  
+
       res.status(response.code).json(response);
     } catch (error) {
-      logger.error('Erro ao direcionar o e-mail:', error);
+      logger.error("Erro ao direcionar o e-mail:", error);
       res.status(500).json({
         code: 500,
         status: "error",
@@ -58,15 +64,18 @@ module.exports = class EmailController {
       });
     }
   }
-  
 
   async cancelarEncaminhamento(req, res) {
     const { userEmail, clientEmail } = req.params;
     try {
-      const response = await EmailService.cancelarEncaminhamento(userEmail, clientEmail);
+      const response = await EmailService.cancelarEncaminhamento(
+        userEmail,
+        clientEmail
+      );
       res.status(response.code).json(response);
     } catch (error) {
-      logger.error('Erro ao cancelar o encaminhamento do e-mail:', error);
+      
+      logger.error("Erro ao cancelar o encaminhamento do e-mail:", error);
       res.status(500).json({
         code: 500,
         status: "error",
@@ -79,10 +88,13 @@ module.exports = class EmailController {
   async reativarEncaminhamento(req, res) {
     const { userEmail, clientEmail } = req.params;
     try {
-      const response = await EmailService.reativarEncaminhamento(userEmail, clientEmail);
+      const response = await EmailService.reativarEncaminhamento(
+        userEmail,
+        clientEmail
+      );
       res.status(response.code).json(response);
     } catch (error) {
-      logger.error('Erro ao reativar o encaminhamento do e-mail:', error);
+      logger.error("Erro ao reativar o encaminhamento do e-mail:", error);
       res.status(500).json({
         code: 500,
         status: "error",
@@ -95,68 +107,140 @@ module.exports = class EmailController {
   async atualizarEncaminhamento(req, res) {
     const { userEmail, clientEmail, forwardingEmail, purpose } = req.body;
     try {
-        const response = await EmailService.atualizarEncaminhamento(userEmail, clientEmail, forwardingEmail, purpose);
-        res.status(response.code).json(response);
-    } catch (error) {
-        
-        logger.error('Erro ao atualizar o encaminhamento do e-mail:', error);
-        res.status(500).json({
-            code: 500,
-            status: "error",
-            message: "Erro ao atualizar o encaminhamento do e-mail",
-            data: error.message,
-        });
-    }
-}
-
-  async listarUsuarios(req, res) {
-    try {
-      const response = await EmailService.listarUsuarios();
+      const response = await EmailService.atualizarEncaminhamento(
+        userEmail,
+        clientEmail,
+        forwardingEmail,
+        purpose
+      );
       res.status(response.code).json(response);
     } catch (error) {
-      logger.error('Erro ao listar usuários:', error);
-      res.status(500).json({
-        code: 500,
-        status: 'error',
-        message: 'Erro ao listar usuários',
-        data: error.message,
-      });
-    }
-  }
-
-  async atualizarPlano(req, res) {
-    const { userId, novoPlano } = req.body;
-    try {
-      const response = await EmailService.atualizarPlano(userId, novoPlano);
-      res.status(response.code).json(response);
-    } catch (error) {
-      logger.error('Erro ao atualizar o plano:', error);
-      res.status(500).json({
-        code: 500,
-        status: 'error',
-        message: 'Erro ao atualizar o plano',
-        data: error.message,
-      });
-    }
-  }
-
-  // Novo método para listar emails do usuário
-  async listarEmailsUsuario (req, res) {
-    const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-  
-    try {
-      const response = await EmailService.listarEmailsUsuario(userId, page, limit);
-      res.status(response.code).json(response);
-    } catch (error) {
-      logger.error('Erro ao listar os e-mails do usuário:', error);
+      logger.error("Erro ao atualizar o encaminhamento do e-mail:", error);
       res.status(500).json({
         code: 500,
         status: "error",
-        message: "Erro ao listar os e-mails do usuário",
+        message: "Erro ao atualizar o encaminhamento do e-mail",
         data: error.message,
       });
     }
-  };
+  }
+
+  async excluirEmail(req, res) {
+    const { userEmail, clientEmail } = req.params;
+    try {
+      const response = await EmailService.excluirEmail(userEmail, clientEmail);
+      res.status(response.code).json(response);
+    } catch (error) {
+      console.log(error);
+      logger.error("Erro ao excluir o e-mail:", error);
+      res.status(500).json({
+        code: 500,
+        status: "error",
+        message: "Erro ao excluir o e-mail",
+        data: error.message,
+      });
+    }
+  }
+  async reativarEmail(req, res) {
+    const { userEmail, clientEmail } = req.params;
+    try {
+      const response = await EmailService.reativarEmail(userEmail, clientEmail);
+      res.status(response.code).json(response);
+    } catch (error) {
+      logger.error('Erro ao reativar o e-mail:', error);
+      res.status(500).json({
+        code: 500,
+        status: "error",
+        message: "Erro ao reativar o e-mail",
+        data: error.message,
+      });
+    }
+  }
+
+  async enviarTokenVerificacao(req, res) {
+    const { email,baseUrl } = req.body;
+
+    try {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({
+          code: 404,
+          status: "error",
+          message: "Usuário não encontrado",
+        });
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      user.emailVerification = {
+        token,
+        createdAt: new Date(),
+        verified: false
+      };
+      await user.save();
+
+      const verificationLink = `${baseUrl}/verify-email?token=${token}`;
+      
+      await sendEmail(
+        email,
+        "Verifique seu email",
+        `<p>Por favor, clique no link a seguir para verificar seu email: <a href="${verificationLink}">${verificationLink}</a></p>`
+      );
+
+      res.status(200).json({
+        code: 200,
+        status: "success",
+        message: "Token de verificação enviado com sucesso",
+      });
+    } catch (error) {
+      logger.error("Erro ao enviar token de verificação:", error);
+      res.status(500).json({
+        code: 500,
+        status: "error",
+        message: "Erro ao enviar token de verificação",
+        data: error.message,
+      });
+    }
+  }
+
+  async validarEmail(req, res) {
+    const { token } = req.params;
+
+    try {
+      const user = await User.findOne({ 'emailVerification.token': token });
+      if (!user) {
+        return res.status(400).json({
+          code: 400,
+          status: "error",
+          message: "Token inválido ou expirado",
+        });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({
+          code: 400,
+          status: "error",
+          message: "Email já verificado",
+        });
+      }
+
+      user.emailVerified = true;
+      user.emailVerification = undefined;
+      await user.save();
+
+      res.status(200).json({
+        code: 200,
+        status: "success",
+        message: "Email verificado com sucesso",
+      });
+    } catch (error) {
+      logger.error("Erro ao validar email:", error);
+      res.status(500).json({
+        code: 500,
+        status: "error",
+        message: "Erro ao validar email",
+        data: error.message,
+      });
+    }
+  }
+
 };

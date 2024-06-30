@@ -9,6 +9,7 @@ const authenticate = async (req, res, next) => {
   if (!token) {
     return next(new AppError('Token não fornecido.', 401));
   }
+ 
 
   try {
     const decoded = verifyToken(token);
@@ -18,6 +19,8 @@ const authenticate = async (req, res, next) => {
     }
     next();
   } catch (error) {
+ 
+
     if (error.name === 'TokenExpiredError') {
       return next(new AppError('Token expirado.', 401));
     }

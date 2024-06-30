@@ -44,8 +44,7 @@ emailRouter.put('/atualizarencaminhamento/:userId',
   );
   
   
-  emailRouter.put(
-    '/cancelarencaminhamento/:userEmail/:clientEmail',
+  emailRouter.put('/cancelarencaminhamento/:userEmail/:clientEmail',
     param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
     param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
     validateRequest,
@@ -54,8 +53,7 @@ emailRouter.put('/atualizarencaminhamento/:userId',
     emailController.cancelarEncaminhamento
   );
 
-emailRouter.put(
-  '/reativarencaminhamento/:userEmail/:clientEmail',
+emailRouter.put('/reativarencaminhamento/:userEmail/:clientEmail',
   param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
   param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
   validateRequest,
@@ -64,20 +62,37 @@ emailRouter.put(
   emailController.reativarEncaminhamento
 );
 
-// Nova rota protegida para exibir os e-mails e direcionamentos do usuário
-emailRouter.get('/listaremailusuario', authenticate, emailController.listarEmailsUsuario);
-
-// Aplicando o middleware de autorização para verificar permissões de administrador
-emailRouter.use(authorize(['admin']));
-
-emailRouter.get('/listarusuarios', emailController.listarUsuarios);
-
-emailRouter.post('/atualizarplano',
-  body('userId').isMongoId().withMessage('ID de usuário inválido'),
-  body('novoPlano').isString().withMessage('Novo plano é obrigatório'),
+emailRouter.put('/excluiremail/:userEmail/:clientEmail',
+  param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
+  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
   validateRequest,
-  emailController.atualizarPlano
+  authenticate,
+  authorize(['admin', 'user']),
+  emailController.excluirEmail
 );
+
+emailRouter.put('/reativaremail/:userEmail/:clientEmail',
+  param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
+  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+  validateRequest,
+  authenticate,
+  authorize(['admin', 'user']),
+  emailController.reativarEmail
+);
+
+emailRouter.post('/enviar-token-verificacao',
+  body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+  validateRequest,
+  emailController.enviarTokenVerificacao
+);
+
+// Nova rota para validar email
+emailRouter.get('/validar-email/:token',
+  param('token').isString().withMessage('Token inválido'),
+  validateRequest,
+  emailController.validarEmail
+);
+
 
 
 

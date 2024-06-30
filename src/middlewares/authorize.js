@@ -2,6 +2,7 @@ const { AppError } = require('./errorHandler');
 const User = require('../models/User');
 
 const authorize = (requiredPermissions) => {
+
   return async (req, res, next) => {
     try {
       const userId = req.user.id;

@@ -62,7 +62,9 @@ authRouter.post(
   body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
   body('baseUrl').custom(isURLWithHTTPorHTTPS),
   validateRequest,
-  authController.requestPasswordReset
+  (req, res, next) => {
+    authController.requestPasswordReset(req, res, next);
+  }
 );
 
 
@@ -70,7 +72,7 @@ authRouter.post('/resetPassword/:token',
   param('token').not().isEmpty().withMessage('Token é obrigatório'),
   body('newPassword').isLength({ min: 6 }).withMessage('A senha deve ter no mínimo 6 caracteres').trim().escape(),
   validateRequest,
-  authController.resetPassword
+  authController.resetPasswordController
 );
 
 
