@@ -3,6 +3,8 @@
 const User = require("../models/User");
 const EmailService = require("../services/emailService");
 const logger = require("../utils/logger");
+const SendEmailServices = require("../services/sendEmailService");
+const crypto = require("crypto");
 
 module.exports = class EmailController {
   async bemvindo(req, res) {
@@ -180,7 +182,7 @@ module.exports = class EmailController {
 
       const verificationLink = `${baseUrl}/verify-email?token=${token}`;
       
-      await sendEmail(
+      await SendEmailServices.sendEmail(
         email,
         "Verifique seu email",
         `<p>Por favor, clique no link a seguir para verificar seu email: <a href="${verificationLink}">${verificationLink}</a></p>`

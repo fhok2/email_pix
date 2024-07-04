@@ -54,20 +54,11 @@ module.exports = class AuthController {
       }
 
       const user = await AuthService.findUserByEmail(email);
-      if (!user) {
+      if (!user || !user.password) {
         return res.status(400).json({
           code: 400,
           status: "error",
           message: "Credenciais inválidas.",
-        });
-      }
-
-      if (!user.password) {
-        logger.error('A senha do usuário não está definida.', { email: user.email });
-        return res.status(500).json({
-          code: 500,
-          status: "error",
-          message: "Erro ao validar a senha. Por favor, tente novamente mais tarde.",
         });
       }
 
@@ -86,33 +77,38 @@ module.exports = class AuthController {
       user.refreshToken = refreshToken;
       await user.save();
 
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      const dashboardData = {
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        role: user.role,
+        permissions: user.permissions,
+        emailVerified: user.emailVerified,
+        paymentDate: user.paymentDate
+      };
 
       res.status(200).json({
         code: 200,
         status: "success",
         message: "Login bem-sucedido.",
+        dashboardData,
         token,
+        refreshToken,
       });
     } catch (error) {
-      console.error(error);
-      logger.error('Erro ao validar a senha.', { error });
+      logger.error('Erro ao realizar login.', { error });
       res.status(500).json({
         code: 500,
         status: "error",
-        message: "Erro ao validar a senha.",
-        data: error,
+        message: "Erro ao realizar login.",
+        data: error.message,
       });
     }
   }
 
   async refreshToken(req, res) {
-    const refreshToken = req.cookies.refreshToken;
+    const { refreshToken } = req.body;
   
     if (!refreshToken) {
       return res.status(401).json({
@@ -125,17 +121,11 @@ module.exports = class AuthController {
     try {
       const { newAccessToken, newRefreshToken } = await AuthService.renewTokens(refreshToken);
   
-      res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-  
       res.status(200).json({
         code: 200,
         status: "success",
         token: newAccessToken,
+        refreshToken: newRefreshToken,
       });
     } catch (error) {
       console.error('Erro ao renovar tokens:', error);

@@ -40,18 +40,7 @@ authRouter.post('/login',
 authRouter.post('/refreshToken', 
   refreshRateLimiter,
 
-  (req, res, next) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({
-        code: 401,
-        status: "error",
-        message: "Refresh token não encontrado nos cookies.",
-      });
-    }
-    req.refreshToken = refreshToken;
-    next();
-  },
+body('refreshToken').not().isEmpty().withMessage('Token de atualização é obrigatório'),
   authController.refreshToken
 );
 

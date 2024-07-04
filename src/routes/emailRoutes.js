@@ -17,7 +17,18 @@ emailRouter.post('/direcionaremail',
   validateRequest,
   emailController.direcionarEmail
 );
+emailRouter.post('/enviar-token-verificacao',
+  body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+  validateRequest,
+  emailController.enviarTokenVerificacao
+);
 
+// Nova rota para validar email
+emailRouter.get('/validar-email/:token',
+  param('token').isString().withMessage('Token inválido'),
+  validateRequest,
+  emailController.validarEmail
+);
 
 emailRouter.use(authenticate);
 
@@ -80,18 +91,7 @@ emailRouter.put('/reativaremail/:userEmail/:clientEmail',
   emailController.reativarEmail
 );
 
-emailRouter.post('/enviar-token-verificacao',
-  body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
-  validateRequest,
-  emailController.enviarTokenVerificacao
-);
 
-// Nova rota para validar email
-emailRouter.get('/validar-email/:token',
-  param('token').isString().withMessage('Token inválido'),
-  validateRequest,
-  emailController.validarEmail
-);
 
 
 
