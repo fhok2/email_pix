@@ -23,16 +23,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socket.init(server);
 
-// Configuração da sessão
-// app.use(session({
-//   secret: process.env.SESSION_SECRET || 'sua_chave_secreta_aqui',
-//   resave: false, 
-//   saveUninitialized: false, 
-//   cookie: { 
-//     secure: process.env.NODE_ENV === 'production',
-//     maxAge: 24 * 60 * 60 * 1000 // 24 horas
-//   }
-// }));
+
 app.use(cookieParser());
 app.set('trust proxy', 1);
 
@@ -46,40 +37,32 @@ app.use(limiter);
 app.use(helmet());
 app.use(xss());
 app.use(bodyParser.json());
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS.split(','),
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   exposedHeaders: ['X-CSRF-Token'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
-// Middleware para gerar ou recuperar o token CSRF da sessão
-// app.use((req, res, next) => {
-//   if (!req.session.csrfToken) {
-//     console.log(req.session)
-//     req.session.csrfToken = crypto.randomBytes(16).toString('hex');
-//     console.log('New CSRF Token generated:', req.session.csrfToken);
-//   } else {
-//     console.log('Existing CSRF Token:', req.session.csrfToken);
-//   }
-//   res.locals.csrfToken = req.session.csrfToken;
-//   next();
-// });
+// Adicione este middleware após a configuração do CORS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', allowedOrigins);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token');
+  res.header('Access-Control-Allow-Credentials', true);
+  next();
+});
 
-// app.use((req, res, next) => {
-//   if (req.path === '/api/csrf/get-csrf-token' || req.originalUrl === '/api/payments/webhook') {
-//     return next();
-//   }
-//   csrfProtection(req, res, next);
-// });
-
-// Middleware de log
-// app.use((req, res, next) => {
-//   console.log('Session ID:', req.sessionID);
-//   console.log('CSRF Token in session:', req.session.csrfToken);
-//   next();
-// });
 
 connectDB();
 
