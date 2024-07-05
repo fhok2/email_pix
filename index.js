@@ -37,12 +37,15 @@ app.use(limiter);
 app.use(helmet());
 app.use(xss());
 app.use(bodyParser.json());
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
+    // Permite requisições sem origem (como apps móveis ou curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, origin);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
@@ -51,15 +54,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   exposedHeaders: ['X-CSRF-Token'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 204
 }));
 
-// Adicione este middleware após a configuração do CORS
+// Middleware para logging (opcional, para depuração)
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', allowedOrigins);
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token');
-  res.header('Access-Control-Allow-Credentials', true);
+  console.log('Request origin:', req.get('origin'));
+  console.log('Request method:', req.method);
   next();
 });
 
