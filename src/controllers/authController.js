@@ -45,6 +45,8 @@ module.exports = class AuthController {
 
   async login(req, res) {
     const { email, password } = req.body;
+    console .log('Email:', email); // Add this line
+    
 
     try {
       if (!email || !password) {
@@ -118,33 +120,50 @@ module.exports = class AuthController {
       if (!user) {
         user = await AuthService.createUserFromFirebase(googleUser);
       } else if (!user.emailVerified) {
-        // If the user exists but email wasn't verified, update it using updateOne
         await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
-        user.emailVerified = true; // Update the local user object as well
+        user.emailVerified = true;
       }
   
-      const accessToken = AuthService.generateToken(user);
+      console.log('User after Google login:', user); // Add this line
+  
+      const token = AuthService.generateToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
   
-     
-      await User.updateOne({ _id: user._id }, { $set: { refreshToken: refreshToken } });
+      user.refreshToken = refreshToken;
+      await user.save();
+  
+      console.log('Generated token:', token); // Add this line
+      console.log('Generated refresh token:', refreshToken); // Add this line
+  
+      const dashboardData = {
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        role: user.role,
+        permissions: user.permissions,
+        emailVerified: user.emailVerified,
+        paymentDate: user.paymentDate
+      };
   
       res.status(200).json({
-        token: accessToken,
-        refreshToken: refreshToken,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          emailVerified: user.emailVerified
-        }
+        code: 200,
+        status: "success",
+        message: "Login bem-sucedido.",
+        dashboardData,
+        token,
+        refreshToken,
       });
     } catch (error) {
-      console.error('Google login error:', error);
-      res.status(401).json({ message: 'Authentication failed', error: error.message });
+      logger.error('Erro ao realizar login com Google.', { error });
+      res.status(500).json({
+        code: 500,
+        status: "error",
+        message: "Erro ao realizar login com Google.",
+        data: error.message,
+      });
     }
-  };
+  }
 
   async refreshToken(req, res) {
     const { refreshToken } = req.body;

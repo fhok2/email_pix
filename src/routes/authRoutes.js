@@ -25,13 +25,13 @@ const refreshRateLimiter = rateLimit({
 authRouter.post('/verifyToken', authController.verifyToken);
 
 authRouter.post('/sendPassword', 
-  body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
+  body('email').isEmail().withMessage('Email inválido'),
   validateRequest,
   authController.sendPassword
 );
 
 authRouter.post('/login', 
-  body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
+  body('email').isEmail().withMessage('Email inválido'), 
   body('password').isLength({ min: 6 }).withMessage('A senha deve ter no mínimo 6 caracteres').trim().escape(),
   validateRequest,
   authController.login
@@ -53,7 +53,7 @@ authRouter.post('/logout', authenticate, authController.logout);
 
 authRouter.post(
   '/requestPasswordReset',
-  body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
+  body('email').isEmail().withMessage('Email inválido'),
   body('baseUrl').custom(isURLWithHTTPorHTTPS),
   validateRequest,
   (req, res, next) => {

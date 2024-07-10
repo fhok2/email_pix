@@ -14,7 +14,6 @@ if (!admin.apps.length) {
     }),
     databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
   });
-  
 }
 
 const generateToken = (user) => {
@@ -118,7 +117,6 @@ const createUserFromFirebase = async (firebaseUser) => {
     role: 'user',
     plan: 'free',
     permissions: ['create_payment'],
-    
   });
   return await newUser.save();
 };

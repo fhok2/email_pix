@@ -19,14 +19,14 @@ const isURLWithHTTPorHTTPS = (value) => {
 emailRouter.get('/bemvindo', emailController.bemvindo);
 
 emailRouter.post('/direcionaremail',
-  body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
+  body('userEmail').isEmail().withMessage('Email inválido'),
   body('customName').isString().withMessage('Nome personalizado é obrigatório'),
-  body('purpose').optional().isString().withMessage('Finalidade deve ser uma string'), // Validação opcional para 'purpose'
+  body('purpose').optional().isString().withMessage('Finalidade deve ser uma string'), 
   validateRequest,
   emailController.direcionarEmail
 );
 emailRouter.post('/enviar-token-verificacao',
-  body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+  body('email').isEmail().withMessage('Email inválido'),
   body('baseUrl').custom(isURLWithHTTPorHTTPS).withMessage('URL base deve começar com http:// ou https://'),
   validateRequest,
   emailController.enviarTokenVerificacao
@@ -42,7 +42,7 @@ emailRouter.get('/validar-email/:token',
 emailRouter.use(authenticate);
 
 emailRouter.post('/criaremail',
-  body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
+  body('userEmail').isEmail().withMessage('Email inválido'),
   body('customName').isString().withMessage('Nome personalizado é obrigatório'),
   body('name').optional().isString().withMessage('Nome deve ser uma string'),
   body('senha').optional().isLength({ min: 6 }).withMessage('A senha deve ter no mínimo 6 caracteres').trim().escape(),
@@ -53,9 +53,9 @@ emailRouter.post('/criaremail',
 
 
 emailRouter.put('/atualizarencaminhamento/:userId',
-  body('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-  body('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
-  body('forwardingEmail').isEmail().withMessage('Email de encaminhamento é obrigatório').normalizeEmail(),
+  body('userEmail').isEmail().withMessage('Email inválido'),
+  body('clientEmail').isEmail().withMessage('Email do cliente é obrigatório'),
+  body('forwardingEmail').isEmail().withMessage('Email de encaminhamento é obrigatório'),
   body('purpose').optional().isString().withMessage('Finalidade deve ser uma string'),
   validateRequest,
   authenticate, // Proteger a rota com autenticação
@@ -65,8 +65,8 @@ emailRouter.put('/atualizarencaminhamento/:userId',
   
   
   emailRouter.put('/cancelarencaminhamento/:userEmail/:clientEmail',
-    param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-    param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+    param('userEmail').isEmail().withMessage('Email inválido'),
+    param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório'),
     validateRequest,
     authenticate,
     authorize(['admin', 'user']),
@@ -74,8 +74,8 @@ emailRouter.put('/atualizarencaminhamento/:userId',
   );
 
 emailRouter.put('/reativarencaminhamento/:userEmail/:clientEmail',
-  param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+  param('userEmail').isEmail().withMessage('Email inválido'),
+  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório'),
   validateRequest,
   authenticate,
   authorize(['admin', 'user']),
@@ -83,8 +83,8 @@ emailRouter.put('/reativarencaminhamento/:userEmail/:clientEmail',
 );
 
 emailRouter.put('/excluiremail/:userEmail/:clientEmail',
-  param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+  param('userEmail').isEmail().withMessage('Email inválido'),
+  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório'),
   validateRequest,
   authenticate,
   authorize(['admin', 'user']),
@@ -92,8 +92,8 @@ emailRouter.put('/excluiremail/:userEmail/:clientEmail',
 );
 
 emailRouter.put('/reativaremail/:userEmail/:clientEmail',
-  param('userEmail').isEmail().withMessage('Email inválido').normalizeEmail(),
-  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório').normalizeEmail(),
+  param('userEmail').isEmail().withMessage('Email inválido'),
+  param('clientEmail').isEmail().withMessage('Email do cliente é obrigatório'),
   validateRequest,
   authenticate,
   authorize(['admin', 'user']),

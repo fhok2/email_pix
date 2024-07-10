@@ -59,8 +59,7 @@ app.use(cors({
 
 // Middleware para logging (opcional, para depuração)
 app.use((req, res, next) => {
-  console.log('Request origin:', req.get('origin'));
-  console.log('Request method:', req.method);
+  console.log('Request body:', req.body);
   next();
 });
 
