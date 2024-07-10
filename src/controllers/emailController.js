@@ -3,8 +3,10 @@
 const User = require("../models/User");
 const EmailService = require("../services/emailService");
 const logger = require("../utils/logger");
-const SendEmailServices = require("../services/sendEmailService");
+
 const crypto = require("crypto");
+const { emailVerification } = require("../utils/emailTemplates");
+const { sendEmail } = require("../services/sendEmailService");
 
 module.exports = class EmailController {
   async bemvindo(req, res) {
@@ -164,6 +166,7 @@ module.exports = class EmailController {
 
     try {
       const user = await User.findOne({ email });
+      console.log(user);
       if (!user) {
         return res.status(404).json({
           code: 404,
@@ -182,11 +185,15 @@ module.exports = class EmailController {
 
       const verificationLink = `${baseUrl}/verify-email?token=${token}`;
       
-      await SendEmailServices.sendEmail(
-        email,
-        "Verifique seu email",
-        `<p>Por favor, clique no link a seguir para verificar seu email: <a href="${verificationLink}">${verificationLink}</a></p>`
-      );
+      const templateMail = emailVerification(verificationLink);
+
+      const dataMail = {
+        from: `"Verificação de email EficazMail" <${process.env.EMAIL_FROM }>`,
+        to: user.email,
+        subject: 'Verificação de Email',
+        html: templateMail,
+      };
+      await sendEmail(dataMail);
 
       res.status(200).json({
         code: 200,
@@ -206,9 +213,11 @@ module.exports = class EmailController {
 
   async validarEmail(req, res) {
     const { token } = req.params;
-
+  
     try {
       const user = await User.findOne({ 'emailVerification.token': token });
+      console.log('Usuário encontrado:', user);
+  
       if (!user) {
         return res.status(400).json({
           code: 400,
@@ -216,26 +225,38 @@ module.exports = class EmailController {
           message: "Token inválido ou expirado",
         });
       }
-
+  
       if (user.emailVerified) {
-        return res.status(400).json({
-          code: 400,
-          status: "error",
+        return res.status(200).json({
+          code: 200,
+          status: "success",
           message: "Email já verificado",
         });
       }
-
-      user.emailVerified = true;
-      user.emailVerification = undefined;
-      await user.save();
-
+  
+      const result = await User.updateOne(
+        { _id: user._id },
+        {
+          $set: { emailVerified: true },
+          $unset: { emailVerification: "" }
+        }
+      );
+  
+  
+      if (result.modifiedCount === 0) {
+        throw new Error('Falha ao atualizar o usuário');
+      }
+  
+      const updatedUser = await User.findById(user._id);
+      
+  
       res.status(200).json({
         code: 200,
         status: "success",
         message: "Email verificado com sucesso",
       });
     } catch (error) {
-      logger.error("Erro ao validar email:", error);
+      console.error("Erro ao validar email:", error);
       res.status(500).json({
         code: 500,
         status: "error",

@@ -36,6 +36,11 @@ authRouter.post('/login',
   validateRequest,
   authController.login
 );
+authRouter.post('/google-login', 
+  body('idToken').not().isEmpty().withMessage('Token do Google é obrigatório'),
+  validateRequest,
+  authController.googleLogin
+);
 
 authRouter.post('/refreshToken', 
   refreshRateLimiter,

@@ -8,6 +8,14 @@ const authorize = require('../middlewares/authorize');
 const validateRequest = require('../middlewares/validateRequest');
 const verifyUserEmail = require('../middlewares/verifyUserEmail');
 
+const isURLWithHTTPorHTTPS = (value) => {
+  console.log(value);
+  if (!value.startsWith('http://') && !value.startsWith('https://')) {
+    throw new Error('URL base deve começar com http:// ou https://');
+  }
+  return true;
+};
+
 emailRouter.get('/bemvindo', emailController.bemvindo);
 
 emailRouter.post('/direcionaremail',
@@ -19,6 +27,7 @@ emailRouter.post('/direcionaremail',
 );
 emailRouter.post('/enviar-token-verificacao',
   body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+  body('baseUrl').custom(isURLWithHTTPorHTTPS).withMessage('URL base deve começar com http:// ou https://'),
   validateRequest,
   emailController.enviarTokenVerificacao
 );

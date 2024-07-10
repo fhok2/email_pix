@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-async function sendEmail(email, subject, html) {
+async function sendEmail(dataMail) {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
@@ -15,15 +15,8 @@ async function sendEmail(email, subject, html) {
     },
   });
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM,
-    to: email,
-    subject: subject,
-    html: html,
-  };
-
   try {
-    await transporter.sendMail(mailOptions);
+    await transporter.sendMail(dataMail);
     console.log('Email sent successfully');
   } catch (error) {
     console.error('Erro ao enviar e-mail:', error);
