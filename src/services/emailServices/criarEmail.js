@@ -5,8 +5,9 @@ const DOMAIN = require("../../enums/dominio");
 
 const EMAIL_API_URL = process.env.URL_SERVER_EMAIL + "/CMD_EMAIL_POP?json=yes";
 
-async function criarEmail(email, senha) {
+async function criarEmail(email) {
   const token = await getToken();
+  
 
   const headers = {
     Cookie: `session=${token}`,
@@ -14,16 +15,20 @@ async function criarEmail(email, senha) {
     "Content-Type": "application/json; charset=utf-8",
   };
 
+  if(email.includes('@')){
+    email = email.split('@')[0];
+  }
   const body = {
     user: email,
-    passwd2: senha || process.env.SENHA_PADRAO,
-    passwd: senha || process.env.SENHA_PADRAO,
+    passwd2: process.env.EMAIL_PASS_USER_DEFAULT,
+    passwd: process.env.EMAIL_PASS_USER_DEFAULT,
     quota: "100",
     limit: "1000",
     domain: DOMAIN.PRINCIPAL,
     json: "yes",
     action: "create",
   };
+
 
   try {
     const response = await axios.post(EMAIL_API_URL, body, { headers });
@@ -44,6 +49,7 @@ async function criarEmail(email, senha) {
         data: error.response.data.result,
       };
     }
+  
     return {
       code: 500,
       status: "error",

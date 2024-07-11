@@ -6,7 +6,9 @@ const emailSchema = new Schema({
   forwarding: { type: String, required: true },
   status: { type: String, enum: ['active', 'inactive', 'deleted'], default: 'active' },
   purpose: { type: String },
-  deletedAt: { type: Date }
+  deletedAt: { type: Date },
+  isRedirect: { type: Boolean, default: true }, // New field to differentiate redirect emails
+  isTemporary: { type: Boolean, default: false } // New field for temporary response emails
 }, { _id: false });
 
 const emailVerificationSchema = new Schema({

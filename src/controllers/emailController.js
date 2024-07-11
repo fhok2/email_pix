@@ -1,12 +1,15 @@
-// src/controllers/emailController.js
+const User = require('../models/User');
 
-const User = require("../models/User");
-const EmailService = require("../services/emailService");
-const logger = require("../utils/logger");
+const logger = require('../utils/logger');
+const { AppError } = require('../middlewares/errorHandler');
 
 const crypto = require("crypto");
 const { emailVerification } = require("../utils/emailTemplates");
 const { sendEmail } = require("../services/sendEmailService");
+const { sendResponseMail } = require("../services/sendResponseMail");
+const { deleteEmailTemporario } = require('../services/emailServices');
+const { direcionarEmail, cancelarEncaminhamento, reativarEncaminhamento, atualizarEncaminhamento, reativarEmail, excluirEmail } = require('../services/emailService');
+
 
 module.exports = class EmailController {
   async bemvindo(req, res) {
@@ -18,13 +21,15 @@ module.exports = class EmailController {
   }
 
   async criarEmail(req, res) {
-    const { userEmail, customName, name, senha } = req.body;
+    const { userEmail, customName } = req.body;
+    const dataCreateMailTemp = {
+      userEmail: userEmail,
+      customName: customName,
+    }
     try {
-      const response = await EmailService.criarEmail(
-        userEmail,
-        customName,
-        name,
-        senha
+      const response = await EmailService.createTemporaryEmail(
+        dataCreateMailTemp
+      
       );
       res.status(response.code).json(response);
     } catch (error) {
@@ -39,7 +44,7 @@ module.exports = class EmailController {
   }
 
   async direcionarEmail(req, res) {
-    const { userEmail, customName, purpose } = req.body; // Adicione o campo 'purpose'
+    const { userEmail, customName, purpose } = req.body; 
 
     try {
       if (!userEmail || !customName) {
@@ -51,7 +56,7 @@ module.exports = class EmailController {
         });
       }
 
-      const response = await EmailService.direcionarEmail({
+      const response = await direcionarEmail({
         customName,
         userEmail,
         purpose: purpose || "", // Defina um valor padrão (em branco) se 'purpose' não estiver presente
@@ -72,7 +77,7 @@ module.exports = class EmailController {
   async cancelarEncaminhamento(req, res) {
     const { userEmail, clientEmail } = req.params;
     try {
-      const response = await EmailService.cancelarEncaminhamento(
+      const response = await cancelarEncaminhamento(
         userEmail,
         clientEmail
       );
@@ -92,7 +97,7 @@ module.exports = class EmailController {
   async reativarEncaminhamento(req, res) {
     const { userEmail, clientEmail } = req.params;
     try {
-      const response = await EmailService.reativarEncaminhamento(
+      const response = await reativarEncaminhamento(
         userEmail,
         clientEmail
       );
@@ -111,7 +116,7 @@ module.exports = class EmailController {
   async atualizarEncaminhamento(req, res) {
     const { userEmail, clientEmail, forwardingEmail, purpose } = req.body;
     try {
-      const response = await EmailService.atualizarEncaminhamento(
+      const response = await atualizarEncaminhamento(
         userEmail,
         clientEmail,
         forwardingEmail,
@@ -132,7 +137,7 @@ module.exports = class EmailController {
   async excluirEmail(req, res) {
     const { userEmail, clientEmail } = req.params;
     try {
-      const response = await EmailService.excluirEmail(userEmail, clientEmail);
+      const response = await excluirEmail(userEmail, clientEmail);
       res.status(response.code).json(response);
     } catch (error) {
       console.log(error);
@@ -148,7 +153,7 @@ module.exports = class EmailController {
   async reativarEmail(req, res) {
     const { userEmail, clientEmail } = req.params;
     try {
-      const response = await EmailService.reativarEmail(userEmail, clientEmail);
+      const response = await reativarEmail(userEmail, clientEmail);
       res.status(response.code).json(response);
     } catch (error) {
       logger.error('Erro ao reativar o e-mail:', error);
@@ -266,4 +271,54 @@ module.exports = class EmailController {
     }
   }
 
+
+  async deleteEmailTemporario(req, res, next) {
+    const { emailToDelete } = req.params;
+    const { user } = req;
+    const userEmail = user.email;
+
+    logger.info(`Attempting to delete temporary email: ${emailToDelete} for user: ${userEmail}`);
+    const userNew = await User.findOne({ email: userEmail });
+    console.log(userNew);
+
+    try {
+      const user = await User.findOne({ email: userEmail });
+      if (!user) {
+        logger.error(`User not found: ${userEmail}`);
+        throw new AppError('User not found', 404);
+      }
+
+      logger.info(`User found. Checking for temporary email...`);
+      const emailIndex = user.createdEmails.findIndex(e => e.address === emailToDelete && e.isTemporary);
+      if (emailIndex === -1) {
+        logger.error(`Temporary email not found: ${emailToDelete}`);
+        throw new AppError('Temporary email not found', 404);
+      }
+
+      logger.info(`Calling email service to delete temporary email...`);
+      await deleteEmailTemporario(emailToDelete);
+
+      logger.info(`Updating database...`);
+      user.createdEmails[emailIndex].isTemporary = false;
+      user.createdEmails[emailIndex].status = 'deleted';
+      user.createdEmails[emailIndex].deletedAt = new Date();
+      await user.save();
+
+      logger.info(`Temporary email deleted successfully: ${emailToDelete}`);
+      res.status(200).json({
+        code: 200,
+        status: "success",
+        message: "Temporary email deleted successfully and marked as non-temporary."
+      });
+    } catch (error) {
+      logger.error(`Error deleting temporary email: ${error.message}`);
+      next(error);
+    }
+  }
+
+
+
+
 };
+
+

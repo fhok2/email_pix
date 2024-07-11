@@ -3,7 +3,6 @@ const emailServices = require('./emailServices');
 const { generatePassword, hashPassword } = require('./passwordService');
 const DOMINIO = require('../enums/dominio');
 const logger = require('../utils/logger');
-const { AppError } = require('../middlewares/errorHandler'); 
 
 // Função para verificar se o ambiente é de produção
 const isProduction = process.env.NODE_ENV === 'production';
@@ -17,8 +16,6 @@ const criarEmail = async (userEmail, customName, name, senha) => {
     localPart = localPart.split("@")[0];
   }
 
-  const fullEmailAddress = `${localPart}@${DOMINIO.PRINCIPAL}`;
-
   if (userEmail.endsWith(`@${DOMINIO.PRINCIPAL}`)) {
     return {
       code: 400,
@@ -27,61 +24,35 @@ const criarEmail = async (userEmail, customName, name, senha) => {
     };
   }
 
-  const existingUser = await User.findOne({ 'createdEmails.address': fullEmailAddress });
-  if (existingUser) {
-    const existingEmail = existingUser.createdEmails.find(email => email.address === fullEmailAddress);
-    
-    if (existingEmail.status === 'deleted') {
-      // Reativar o e-mail deletado
-      const reactivationResponse = await emailServices.criarEmail(fullEmailAddress);
-      
-      if (reactivationResponse.code === 200) {
-        existingEmail.status = 'active';
-        existingEmail.deletedAt = undefined;
-        await existingUser.save();
-        
-        return {
-          code: 200,
-          status: "success",
-          message: "E-mail reativado com sucesso.",
-          data: { email: fullEmailAddress }
-        };
-      } else {
-        return reactivationResponse;
-      }
-    } else {
-      return {
-        code: 400,
-        status: "error",
-        message: "E-mail já existe. Por favor, escolha outro nome.",
-      };
-    }
+  const emailExists = await User.findOne({ 'createdEmails.address': `${localPart}@${DOMINIO.PRINCIPAL}` });
+  if (emailExists) {
+    return {
+      code: 400,
+      status: "error",
+      message: "E-mail já existe. Por favor, escolha outro nome.",
+    };
   }
 
   const password = senha || generatePassword();
   const hashedPassword = await hashPassword(password);
 
   let response = await emailServices.criarEmail(localPart, password);
-
-  if (response.code === 404 || response.message === 'Email já existe') {
-    return {
-      code: 404,
-      status: "error",
-      message: "Erro ao criar o e-mail.",
-      data: response.message,
-    }
+  while (response.code === 404) {
+    const adicionarNumero = Math.floor(Math.random() * 10);
+    localPart += adicionarNumero;
+    response = await emailServices.criarEmail(localPart, password);
   }
 
   const user = await User.findOne({ email: userEmail });
   if (user) {
-    if (!isDemo && user.plan === 'free' && user.createdEmails.filter(e => e.status !== 'deleted').length >= 3) {
+    if (!isDemo && user.plan === 'free' && user.createdEmails.length >= 3) {
       return {
         code: 403,
         status: "error",
-        message: "Plano gratuito permite até 3 e-mails ativos.",
+        message: "Plano gratuito permite até 3 e-mails.",
       };
     }
-    user.createdEmails.push({ address: response.email, forwarding: userEmail, status: 'active' });
+    user.createdEmails.push({ address: response.email, forwarding: userEmail });
     await user.save();
   } else {
     if (!name) {
@@ -91,104 +62,11 @@ const criarEmail = async (userEmail, customName, name, senha) => {
         message: "Nome do usuário é necessário para criar um novo usuário.",
       };
     }
-    await User.create({ 
-      name, 
-      email: userEmail, 
-      password: hashedPassword, 
-      createdEmails: [{ address: response.email, forwarding: userEmail, status: 'active' }] 
-    });
+    await User.create({ name, email: userEmail, password: hashedPassword, createdEmails: [{ address: response.email, forwarding: userEmail }] });
   }
 
   return response;
 };
-
-const createTemporaryEmail = async (dataCreateMailTemp) => {
-  const { userEmail, customName } = dataCreateMailTemp;
-
-  const user = await User.findOne({ email: userEmail });
-
-  if (!user) {
-    throw new AppError('User not found', 404);
-  }
-
-  // Garante que o customName não inclua o domínio
-  const localPart = customName.split('@')[0];
-  const fullEmailAddress = `${localPart}@${DOMINIO.PRINCIPAL}`;
-
-  try {
-    // Create the email on the email server
-    const response = await emailServices.criarEmail(localPart, generatePassword());
-
-    if (response.code === 200) {
-      // Adiciona o email temporário ao array de emails criados pelo usuário
-      user.createdEmails.push({
-        address: fullEmailAddress,
-        forwarding: userEmail,
-        status: 'active',
-        isRedirect: false,
-        isTemporary: true
-      });
-      await user.save();
-
-      return {
-        code: 200,
-        status: "success",
-        message: "Temporary email created successfully.",
-        data: { email: fullEmailAddress }
-      };
-    } else {
-      // Trata outros códigos de resposta de erro
-      throw new AppError(response.message || 'Failed to create temporary email', response.code || 500);
-
-    }
-  } catch (error) {
-    // Trata erros de 404 especificamente
-    if (error.code === 404) {
-      throw new AppError('Email already exists', 404);
-    }
-    // Lança qualquer outro erro
-    throw new AppError(error.message || 'Failed to create temporary email', error.code || 500);
-  }
-};
-
-const deleteEmailTemporario = async (userEmail, emailToDelete) => {
-  console.log(`Attempting to delete temporary email: ${emailToDelete} for user: ${userEmail}`);
-
-  const user = await User.findOne({ email: userEmail });
-  if (!user) {
-    console.log(`User not found: ${userEmail}`);
-    throw new AppError('User not found', 404);
-  }
-
-  console.log(`User found. Checking for temporary email...`);
-  const emailIndex = user.createdEmails.findIndex(e => e.address === emailToDelete && e.isTemporary);
-  if (emailIndex === -1) {
-    console.log(`Temporary email not found: ${emailToDelete}`);
-    throw new AppError('Temporary email not found', 404);
-  }
-
-  try {
-    console.log(`Calling email service to delete temporary email...`);
-    await emailServices.deleteTemporaryEmail(emailToDelete);
-
-    console.log(`Updating database...`);
-    user.createdEmails[emailIndex].isTemporary = false;
-    user.createdEmails[emailIndex].status = 'deleted';
-    user.createdEmails[emailIndex].deletedAt = new Date();
-    await user.save();
-
-    console.log(`Temporary email deleted successfully: ${emailToDelete}`);
-    return {
-      code: 200,
-      status: "success",
-      message: "Temporary email deleted successfully and marked as non-temporary."
-    };
-  } catch (error) {
-    console.error(`Error deleting temporary email: ${error.message}`);
-    throw new AppError(error.message || 'Failed to delete temporary email', error.code || 500);
-  }
-};
-
 
 const direcionarEmail = async (dataEmails) => {
   const { userEmail, customName, purpose } = dataEmails; // Adicione o campo 'purpose'
@@ -417,7 +295,5 @@ module.exports = {
   reativarEncaminhamento,
   atualizarEncaminhamento,
   excluirEmail,
-  reativarEmail,
-  deleteEmailTemporario,
-  createTemporaryEmail,
+  reativarEmail
 };

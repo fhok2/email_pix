@@ -13,6 +13,7 @@ const authenticate = async (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
+ 
     req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) {
       return next(new AppError('Usuário não encontrado.', 401));
