@@ -14,7 +14,7 @@ async function sendResponseMail(dataMail) {
       pass: dataMail.pass || process.env.EMAIL_PASS_USER_DEFAULT,
     },
     tls: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
     },
   });
 
