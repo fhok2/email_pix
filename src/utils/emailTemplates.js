@@ -163,5 +163,4 @@ module.exports = {
     </html>
   `,
 
-  // Você pode adicionar mais templates aqui conforme necessário
 };

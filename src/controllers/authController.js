@@ -45,7 +45,7 @@ module.exports = class AuthController {
 
   async login(req, res) {
     const { email, password } = req.body;
-    console .log('Email:', email); // Add this line
+ 
     
 
     try {
@@ -123,8 +123,7 @@ module.exports = class AuthController {
         await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
         user.emailVerified = true;
       }
-  
-      console.log('User after Google login:', user); // Add this line
+
   
       const token = AuthService.generateToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
@@ -132,8 +131,7 @@ module.exports = class AuthController {
       user.refreshToken = refreshToken;
       await user.save();
   
-      console.log('Generated token:', token); // Add this line
-      console.log('Generated refresh token:', refreshToken); // Add this line
+  
   
       const dashboardData = {
         userId: user._id,
