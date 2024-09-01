@@ -1,71 +1,103 @@
 const express = require('express');
-const serverless = require('serverless-http');
+const http = require('http');
+const bodyParser = require('body-parser');
+const connectDB = require('./src/config/database');
+const paymentRoutes = require('./src/routes/paymentRoutes');
+const emailRoutes = require('./src/routes/emailRoutes');
+const authRoutes = require('./src/routes/authRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+const adminRouter = require('./src/routes/adminRouters');
+const socket = require('./socket');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const xss = require('xss-clean');
 const cookieParser = require('cookie-parser');
 const { errorHandler } = require('./src/middlewares/errorHandler');
+const serverless = require('serverless-http');
 
 const app = express();
 
-// Configuração básica
+// Middleware de segurança e parsing
 app.use(cookieParser());
+app.set('trust proxy', 1);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+
+app.use(limiter);
 app.use(helmet());
 app.use(xss());
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Configuração CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) : ['http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('chrome-extension://')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['X-CSRF-Token'],
   credentials: true,
   optionsSuccessStatus: 204
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
-app.use(limiter);
-
-// Logging middleware
+// Middleware para logging
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Request URL:', req.originalUrl);
+  console.log('Request body:', req.body);
   next();
 });
 
 // Conexão com o banco de dados
-const connectDB = require('./src/config/database');
-connectDB().catch(console.error);
+connectDB();
 
 // Rotas
-app.use('/api/payments', require('./src/routes/paymentRoutes'));
-app.use('/api/emails', require('./src/routes/emailRoutes'));
-app.use('/api/auth', require('./src/routes/authRoutes'));
-app.use('/api/user', require('./src/routes/userRoutes'));
-app.use('/api/admin', require('./src/routes/adminRouters'));
+app.use('/api/payments', paymentRoutes);
+app.use('/api/emails', emailRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/admin', adminRouter);
 
 // Rota de teste
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working!', env: process.env.NODE_ENV });
+  res.json({ message: 'API is working!' });
 });
 
 // Middleware de tratamento de erros
 app.use(errorHandler);
 
-// Exportação para Vercel
-module.exports = serverless(app);
-
-// Para desenvolvimento local
+// Configuração para ambiente de desenvolvimento local
 if (process.env.NODE_ENV !== 'production') {
+  const server = http.createServer(app);
+  const io = socket.init(server);
+
   const PORT = process.env.PORT || 3005;
-  app.listen(PORT, () => console.log(`Servidor rodando na porta: ${PORT}`));
+  server.listen(PORT, () => {
+    console.log(`Servidor rodando na porta: ${PORT}`);
+  });
+
+  module.exports = io;
+} else {
+  // Configuração para Vercel (produção)
+  const wrappedHandler = serverless(app);
+  
+  module.exports = async (req, res) => {
+    // Inicializa o Socket.IO para cada requisição na Vercel
+    const server = http.createServer(app);
+    const io = socket.init(server);
+    
+    // Adiciona o io ao objeto req para que possa ser acessado nas rotas
+    req.io = io;
+    
+    return wrappedHandler(req, res);
+  };
 }
