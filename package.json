@@ -9,11 +9,13 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "build": "echo 'No build step required'",
-    "vercel-build": "echo 'Vercel build step'",
-    "deploy": "vercel --prod"
+    "build": "npm install"
   },
-  "keywords": ["email", "server", "api"],
+  "keywords": [
+    "email",
+    "server",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
