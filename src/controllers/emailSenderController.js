@@ -5,7 +5,7 @@ const { criarEmail, deleteEmailTemporario } = require('../services/emailServices
 module.exports = class EmailSenderController {
   async sendEmail(req, res) {
     const { userEmail, clientEmail, subject, message } = req.body;
-console.log('message', message);
+
     try {
       // 1. Criar email temporário
       const localPart = userEmail.split('@')[0];
@@ -30,7 +30,7 @@ console.log('message', message);
       await sendResponseMail(mailData);
 
       // 3. Excluir email temporário
-      // await deleteEmailTemporario(tempEmail);
+      await deleteEmailTemporario(tempEmail);
 
       res.status(200).json({
         code: 200,

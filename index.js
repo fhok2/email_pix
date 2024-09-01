@@ -39,13 +39,31 @@ app.use(xss());
 app.use(bodyParser.json());
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
 
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     // Permite requisições sem origem (como apps móveis ou curl)
+//     if (!origin) return callback(null, true);
+    
+//     if (allowedOrigins.indexOf(origin) !== -1) {
+//       callback(null, origin);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+//   exposedHeaders: ['X-CSRF-Token'],
+//   credentials: true,
+//   optionsSuccessStatus: 204
+// }));
+
 app.use(cors({
   origin: function (origin, callback) {
     // Permite requisições sem origem (como apps móveis ou curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, origin);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('chrome-extension://')) {
+      callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
@@ -59,6 +77,7 @@ app.use(cors({
 
 // Middleware para logging (opcional, para depuração)
 app.use((req, res, next) => {
+  console.log('Request URL:', req.originalUrl);
   console.log('Request body:', req.body);
   next();
 });
